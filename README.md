@@ -1,2 +1,2 @@
-# studio-application-modules
-studio one platform applicatioin moudes
+# StudioOne Page Service
+studio one platform 기반의 페이지 서비스 
