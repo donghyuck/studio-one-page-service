@@ -1,0 +1,469 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sqlset name="document" namespace="data.document" description="Document SQLs">
+
+    <sql id="insert">
+        <![CDATA[
+        INSERT INTO "TB_APPLICATION_DOCUMENT"
+            ("OBJECT_TYPE","OBJECT_ID","PARENT_DOCUMENT_ID","SORT_ORDER","NAME","VERSION_ID","READ_COUNT","PATTERN",
+             "CREATED_BY","CREATED_AT","UPDATED_BY","UPDATED_AT")
+        VALUES (:objectType,:objectId,:parentDocumentId,:sortOrder,:name,1,0,:pattern,:createdBy,:createdAt,NULL,NULL)
+        ]]>
+    </sql>
+
+    <sql id="insertVersion">
+        <![CDATA[
+        INSERT INTO "TB_APPLICATION_DOCUMENT_VERSION"
+            ("DOCUMENT_ID","VERSION_ID","STATE","TITLE","SECURED","CONTENT_TYPE","TEMPLATE","SCRIPT","PATTERN","SUMMARY",
+             "CREATED_BY","CREATED_AT","UPDATED_BY","UPDATED_AT")
+        VALUES (:documentId,:versionId,NULL,:title,TRUE,NULL,NULL,NULL,NULL,NULL,:createdBy,:createdAt,NULL,NULL)
+        ]]>
+    </sql>
+
+    <sql id="insertBody">
+        <![CDATA[
+        INSERT INTO "TB_APPLICATION_DOCUMENT_BODY"
+            ("DOCUMENT_ID","BODY_TYPE","BODY_TEXT","CREATED_BY","CREATED_AT","UPDATED_BY","UPDATED_AT")
+        VALUES (:documentId,:bodyType,:bodyText,:createdBy,:createdAt,NULL,NULL)
+        ]]>
+    </sql>
+
+    <sql id="insertBodyVersion">
+        <![CDATA[
+        INSERT INTO "TB_APPLICATION_DOCUMENT_BODY_VERSION"
+            ("BODY_ID","DOCUMENT_ID","VERSION_ID","CREATED_BY","CREATED_AT")
+        VALUES (:bodyId,:documentId,:versionId,:createdBy,:createdAt)
+        ]]>
+    </sql>
+
+    <sql id="insertProperty">
+        <![CDATA[
+        INSERT INTO "TB_APPLICATION_DOCUMENT_PROPERTY"
+            ("DOCUMENT_ID","VERSION_ID","PROPERTY_NAME","PROPERTY_VALUE","CREATED_BY","CREATED_AT","UPDATED_BY","UPDATED_AT")
+        VALUES (:documentId,:versionId,:name,:value,:createdBy,:createdAt,NULL,NULL)
+        ]]>
+    </sql>
+
+    <sql id="selectCurrentVersionForUpdate">
+        <![CDATA[
+        SELECT "VERSION_ID"
+          FROM "TB_APPLICATION_DOCUMENT"
+         WHERE "DOCUMENT_ID" = :documentId
+         FOR UPDATE
+        ]]>
+    </sql>
+
+    <sql id="updateCurrentVersion">
+        <![CDATA[
+        UPDATE "TB_APPLICATION_DOCUMENT"
+           SET "VERSION_ID" = :versionId,
+               "UPDATED_BY" = :updatedBy,
+               "UPDATED_AT" = :updatedAt
+         WHERE "DOCUMENT_ID" = :documentId
+        ]]>
+    </sql>
+
+    <sql id="selectDocument">
+        <![CDATA[
+        SELECT *
+          FROM "TB_APPLICATION_DOCUMENT"
+         WHERE "DOCUMENT_ID" = :documentId
+        ]]>
+    </sql>
+
+    <sql id="selectDocumentUpdatedAtForUpdate">
+        <![CDATA[
+        SELECT "UPDATED_AT"
+          FROM "TB_APPLICATION_DOCUMENT"
+         WHERE "DOCUMENT_ID" = :documentId
+         FOR UPDATE
+        ]]>
+    </sql>
+
+    <sql id="selectVersion">
+        <![CDATA[
+        SELECT *
+          FROM "TB_APPLICATION_DOCUMENT_VERSION"
+         WHERE "DOCUMENT_ID" = :documentId
+           AND "VERSION_ID" = :versionId
+        ]]>
+    </sql>
+
+    <sql id="selectBodyLatest">
+        <![CDATA[
+        SELECT b."BODY_TYPE", b."BODY_TEXT"
+          FROM "TB_APPLICATION_DOCUMENT_BODY_VERSION" bv
+          JOIN "TB_APPLICATION_DOCUMENT_BODY" b
+            ON b."BODY_ID" = bv."BODY_ID"
+         WHERE bv."DOCUMENT_ID" = :documentId
+           AND bv."VERSION_ID" = :versionId
+         ORDER BY bv."CREATED_AT" DESC
+         LIMIT 1
+        ]]>
+    </sql>
+
+    <sql id="selectProperties">
+        <![CDATA[
+        SELECT "PROPERTY_NAME", "PROPERTY_VALUE"
+          FROM "TB_APPLICATION_DOCUMENT_PROPERTY"
+         WHERE "DOCUMENT_ID" = :documentId
+           AND "VERSION_ID" = :versionId
+         ORDER BY "PROPERTY_NAME"
+        ]]>
+    </sql>
+
+    <sql id="selectVersions">
+        <![CDATA[
+        SELECT *
+          FROM "TB_APPLICATION_DOCUMENT_VERSION"
+         WHERE "DOCUMENT_ID" = :documentId
+         ORDER BY "VERSION_ID" DESC
+        ]]>
+    </sql>
+
+    <sql id="selectDocuments">
+        <![CDATA[
+        SELECT *
+          FROM "TB_APPLICATION_DOCUMENT"
+         ORDER BY "DOCUMENT_ID" DESC
+         LIMIT :limit OFFSET :offset
+        ]]>
+    </sql>
+
+    <sql id="countDocuments">
+        <![CDATA[
+        SELECT COUNT(*)
+          FROM "TB_APPLICATION_DOCUMENT"
+        ]]>
+    </sql>
+
+    <sql id="selectDocumentsByObject">
+        <![CDATA[
+        SELECT *
+          FROM "TB_APPLICATION_DOCUMENT"
+         WHERE "OBJECT_TYPE" = :objectType
+           AND "OBJECT_ID" = :objectId
+         ORDER BY "DOCUMENT_ID" DESC
+         LIMIT :limit OFFSET :offset
+        ]]>
+    </sql>
+
+    <sql id="selectDocumentsByParent">
+        <![CDATA[
+        SELECT *
+          FROM "TB_APPLICATION_DOCUMENT"
+         WHERE "PARENT_DOCUMENT_ID" = :parentDocumentId
+         ORDER BY "SORT_ORDER" ASC, "DOCUMENT_ID" ASC
+         LIMIT :limit OFFSET :offset
+        ]]>
+    </sql>
+
+    <sql id="countDocumentsByParent">
+        <![CDATA[
+        SELECT COUNT(*)
+          FROM "TB_APPLICATION_DOCUMENT"
+         WHERE "PARENT_DOCUMENT_ID" = :parentDocumentId
+        ]]>
+    </sql>
+
+    <sql id="selectRootDocuments">
+        <![CDATA[
+        SELECT *
+          FROM "TB_APPLICATION_DOCUMENT"
+         WHERE "PARENT_DOCUMENT_ID" IS NULL
+         ORDER BY "SORT_ORDER" ASC, "DOCUMENT_ID" ASC
+         LIMIT :limit OFFSET :offset
+        ]]>
+    </sql>
+
+    <sql id="countRootDocuments">
+        <![CDATA[
+        SELECT COUNT(*)
+          FROM "TB_APPLICATION_DOCUMENT"
+         WHERE "PARENT_DOCUMENT_ID" IS NULL
+        ]]>
+    </sql>
+
+    <sql id="countDocumentsByObject">
+        <![CDATA[
+        SELECT COUNT(*)
+          FROM "TB_APPLICATION_DOCUMENT"
+         WHERE "OBJECT_TYPE" = :objectType
+           AND "OBJECT_ID" = :objectId
+        ]]>
+    </sql>
+
+    <sql id="selectDocumentsByNameOrBody">
+        <![CDATA[
+        SELECT DISTINCT d.*
+          FROM "TB_APPLICATION_DOCUMENT" d
+          LEFT JOIN "TB_APPLICATION_DOCUMENT_BODY" b
+            ON b."DOCUMENT_ID" = d."DOCUMENT_ID"
+         WHERE LOWER(d."NAME") LIKE :keyword
+            OR LOWER(b."BODY_TEXT") LIKE :keyword
+         ORDER BY d."DOCUMENT_ID" DESC
+         LIMIT :limit OFFSET :offset
+        ]]>
+    </sql>
+
+    <sql id="countDocumentsByNameOrBody">
+        <![CDATA[
+        SELECT COUNT(DISTINCT d."DOCUMENT_ID")
+          FROM "TB_APPLICATION_DOCUMENT" d
+          LEFT JOIN "TB_APPLICATION_DOCUMENT_BODY" b
+            ON b."DOCUMENT_ID" = d."DOCUMENT_ID"
+         WHERE LOWER(d."NAME") LIKE :keyword
+            OR LOWER(b."BODY_TEXT") LIKE :keyword
+        ]]>
+    </sql>
+
+    <sql id="updateMeta">
+        <![CDATA[
+        UPDATE "TB_APPLICATION_DOCUMENT"
+           SET "NAME" = :name,
+               "PATTERN" = :pattern,
+               "UPDATED_BY" = :updatedBy,
+               "UPDATED_AT" = :updatedAt
+         WHERE "DOCUMENT_ID" = :documentId
+        ]]>
+    </sql>
+
+    <sql id="deleteDocument">
+        <![CDATA[
+        DELETE FROM "TB_APPLICATION_DOCUMENT"
+         WHERE "DOCUMENT_ID" = :documentId
+        ]]>
+    </sql>
+
+    <sql id="deleteDocumentBlockVersions">
+        <![CDATA[
+        DELETE FROM "TB_APPLICATION_DOCUMENT_BLOCK_VERSION"
+         WHERE "DOCUMENT_ID" = :documentId
+        ]]>
+    </sql>
+
+    <sql id="deleteDocumentBlocks">
+        <![CDATA[
+        DELETE FROM "TB_APPLICATION_DOCUMENT_BLOCK"
+         WHERE "DOCUMENT_ID" = :documentId
+        ]]>
+    </sql>
+
+    <sql id="deleteDocumentBodyVersions">
+        <![CDATA[
+        DELETE FROM "TB_APPLICATION_DOCUMENT_BODY_VERSION"
+         WHERE "DOCUMENT_ID" = :documentId
+        ]]>
+    </sql>
+
+    <sql id="deleteDocumentBodies">
+        <![CDATA[
+        DELETE FROM "TB_APPLICATION_DOCUMENT_BODY"
+         WHERE "DOCUMENT_ID" = :documentId
+        ]]>
+    </sql>
+
+    <sql id="deleteDocumentProperties">
+        <![CDATA[
+        DELETE FROM "TB_APPLICATION_DOCUMENT_PROPERTY"
+         WHERE "DOCUMENT_ID" = :documentId
+        ]]>
+    </sql>
+
+    <sql id="deleteDocumentVersions">
+        <![CDATA[
+        DELETE FROM "TB_APPLICATION_DOCUMENT_VERSION"
+         WHERE "DOCUMENT_ID" = :documentId
+        ]]>
+    </sql>
+
+    <sql id="insertBlock">
+        <![CDATA[
+        INSERT INTO "TB_APPLICATION_DOCUMENT_BLOCK"
+            ("DOCUMENT_ID","PARENT_BLOCK_ID","BLOCK_TYPE","BLOCK_DATA","SORT_ORDER","IS_DELETED",
+             "CREATED_BY","CREATED_AT","UPDATED_BY","UPDATED_AT")
+        VALUES (:documentId,:parentBlockId,:blockType,:blockData,:sortOrder,:isDeleted,:createdBy,:createdAt,NULL,NULL)
+        ]]>
+    </sql>
+
+    <sql id="updateBlock">
+        <![CDATA[
+        UPDATE "TB_APPLICATION_DOCUMENT_BLOCK"
+           SET "PARENT_BLOCK_ID" = :parentBlockId,
+               "BLOCK_TYPE" = :blockType,
+               "BLOCK_DATA" = :blockData,
+               "SORT_ORDER" = :sortOrder,
+               "UPDATED_BY" = :updatedBy,
+               "UPDATED_AT" = :updatedAt
+         WHERE "BLOCK_ID" = :blockId
+        ]]>
+    </sql>
+
+    <sql id="updateBlockDeleted">
+        <![CDATA[
+        UPDATE "TB_APPLICATION_DOCUMENT_BLOCK"
+           SET "IS_DELETED" = :isDeleted,
+               "UPDATED_BY" = :updatedBy,
+               "UPDATED_AT" = :updatedAt
+         WHERE "BLOCK_ID" = :blockId
+        ]]>
+    </sql>
+
+    <sql id="deleteBlock">
+        <![CDATA[
+        DELETE FROM "TB_APPLICATION_DOCUMENT_BLOCK"
+         WHERE "BLOCK_ID" = :blockId
+        ]]>
+    </sql>
+
+    <sql id="selectBlocksByDocument">
+        <![CDATA[
+        SELECT *
+          FROM "TB_APPLICATION_DOCUMENT_BLOCK"
+         WHERE "DOCUMENT_ID" = :documentId
+           AND "IS_DELETED" = FALSE
+         ORDER BY "SORT_ORDER" ASC, "BLOCK_ID" ASC
+        ]]>
+    </sql>
+
+    <sql id="selectCurrentVersion">
+        <![CDATA[
+        SELECT "VERSION_ID"
+          FROM "TB_APPLICATION_DOCUMENT"
+         WHERE "DOCUMENT_ID" = :documentId
+        ]]>
+    </sql>
+
+    <sql id="selectBlocksByVersion">
+        <![CDATA[
+        SELECT "BLOCK_ID","DOCUMENT_ID","PARENT_BLOCK_ID","BLOCK_TYPE","BLOCK_DATA","SORT_ORDER",
+               "IS_DELETED","CREATED_BY","CREATED_AT", NULL AS "UPDATED_BY", NULL AS "UPDATED_AT"
+          FROM "TB_APPLICATION_DOCUMENT_BLOCK_VERSION"
+         WHERE "DOCUMENT_ID" = :documentId
+           AND "VERSION_ID" = :versionId
+           AND "IS_DELETED" = FALSE
+         ORDER BY "SORT_ORDER" ASC, "BLOCK_ID" ASC
+        ]]>
+    </sql>
+
+    <sql id="selectBlocksByVersionAll">
+        <![CDATA[
+        SELECT "BLOCK_ID","DOCUMENT_ID","PARENT_BLOCK_ID","BLOCK_TYPE","BLOCK_DATA","SORT_ORDER",
+               "IS_DELETED","CREATED_BY","CREATED_AT", NULL AS "UPDATED_BY", NULL AS "UPDATED_AT"
+          FROM "TB_APPLICATION_DOCUMENT_BLOCK_VERSION"
+         WHERE "DOCUMENT_ID" = :documentId
+           AND "VERSION_ID" = :versionId
+         ORDER BY "SORT_ORDER" ASC, "BLOCK_ID" ASC
+        ]]>
+    </sql>
+
+    <sql id="insertBlockVersion">
+        <![CDATA[
+        INSERT INTO "TB_APPLICATION_DOCUMENT_BLOCK_VERSION"
+            ("BLOCK_ID","DOCUMENT_ID","VERSION_ID","PARENT_BLOCK_ID","BLOCK_TYPE","BLOCK_DATA","SORT_ORDER","IS_DELETED",
+             "CREATED_BY","CREATED_AT")
+        VALUES (:blockId,:documentId,:versionId,:parentBlockId,:blockType,:blockData,:sortOrder,:isDeleted,:createdBy,:createdAt)
+        ]]>
+    </sql>
+
+    <sql id="deleteBlockVersion">
+        <![CDATA[
+        DELETE FROM "TB_APPLICATION_DOCUMENT_BLOCK_VERSION"
+         WHERE "BLOCK_ID" = :blockId
+           AND "DOCUMENT_ID" = :documentId
+           AND "VERSION_ID" = :versionId
+        ]]>
+    </sql>
+
+    <sql id="selectBlockVersion">
+        <![CDATA[
+        SELECT "PARENT_BLOCK_ID","BLOCK_TYPE","BLOCK_DATA","SORT_ORDER","IS_DELETED"
+          FROM "TB_APPLICATION_DOCUMENT_BLOCK_VERSION"
+         WHERE "BLOCK_ID" = :blockId
+           AND "DOCUMENT_ID" = :documentId
+           AND "VERSION_ID" = :versionId
+        ]]>
+    </sql>
+
+    <sql id="selectBlockDocumentId">
+        <![CDATA[
+        SELECT "DOCUMENT_ID"
+          FROM "TB_APPLICATION_DOCUMENT_BLOCK"
+         WHERE "BLOCK_ID" = :blockId
+        ]]>
+    </sql>
+
+    <sql id="selectBlockMeta">
+        <![CDATA[
+        SELECT "DOCUMENT_ID","PARENT_BLOCK_ID","BLOCK_TYPE","BLOCK_DATA","SORT_ORDER","IS_DELETED","UPDATED_AT"
+          FROM "TB_APPLICATION_DOCUMENT_BLOCK"
+         WHERE "BLOCK_ID" = :blockId
+        ]]>
+    </sql>
+
+    <sql id="selectMaxBlockSortOrder">
+        <![CDATA[
+        SELECT COALESCE(MAX("SORT_ORDER"), -1)
+          FROM "TB_APPLICATION_DOCUMENT_BLOCK_VERSION"
+         WHERE "DOCUMENT_ID" = :documentId
+           AND "VERSION_ID" = :versionId
+           AND "IS_DELETED" = FALSE
+        ]]>
+    </sql>
+
+    <sql id="shiftBlockSortOrder">
+        <![CDATA[
+        UPDATE "TB_APPLICATION_DOCUMENT_BLOCK"
+           SET "SORT_ORDER" = "SORT_ORDER" + 1
+         WHERE "DOCUMENT_ID" = :documentId
+           AND "IS_DELETED" = FALSE
+           AND "SORT_ORDER" >= :sortOrder
+        ]]>
+    </sql>
+
+    <sql id="shiftBlockVersionSortOrder">
+        <![CDATA[
+        UPDATE "TB_APPLICATION_DOCUMENT_BLOCK_VERSION"
+           SET "SORT_ORDER" = "SORT_ORDER" + 1
+         WHERE "DOCUMENT_ID" = :documentId
+           AND "VERSION_ID" = :versionId
+           AND "IS_DELETED" = FALSE
+           AND "SORT_ORDER" >= :sortOrder
+           AND "BLOCK_ID" <> :blockId
+        ]]>
+    </sql>
+
+    <sql id="shiftBlockSortOrderDown">
+        <![CDATA[
+        UPDATE "TB_APPLICATION_DOCUMENT_BLOCK"
+           SET "SORT_ORDER" = "SORT_ORDER" - 1
+         WHERE "DOCUMENT_ID" = :documentId
+           AND "IS_DELETED" = FALSE
+           AND "SORT_ORDER" > :sortOrder
+        ]]>
+    </sql>
+
+    <sql id="shiftBlockVersionSortOrderDown">
+        <![CDATA[
+        UPDATE "TB_APPLICATION_DOCUMENT_BLOCK_VERSION"
+           SET "SORT_ORDER" = "SORT_ORDER" - 1
+         WHERE "DOCUMENT_ID" = :documentId
+           AND "VERSION_ID" = :versionId
+           AND "IS_DELETED" = FALSE
+           AND "SORT_ORDER" > :sortOrder
+        ]]>
+    </sql>
+
+    <sql id="copyBlockVersion">
+        <![CDATA[
+        INSERT INTO "TB_APPLICATION_DOCUMENT_BLOCK_VERSION"
+            ("BLOCK_ID","DOCUMENT_ID","VERSION_ID","PARENT_BLOCK_ID","BLOCK_TYPE","BLOCK_DATA","SORT_ORDER","IS_DELETED",
+             "CREATED_BY","CREATED_AT")
+        SELECT "BLOCK_ID","DOCUMENT_ID",:toVersionId,"PARENT_BLOCK_ID","BLOCK_TYPE","BLOCK_DATA","SORT_ORDER","IS_DELETED",
+               :createdBy,:createdAt
+          FROM "TB_APPLICATION_DOCUMENT_BLOCK_VERSION"
+         WHERE "DOCUMENT_ID" = :documentId
+           AND "VERSION_ID" = :fromVersionId
+        ]]>
+    </sql>
+
+</sqlset>
