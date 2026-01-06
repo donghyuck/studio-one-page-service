@@ -44,9 +44,10 @@ import studio.one.application.document.domain.model.Document;
 import studio.one.application.document.domain.model.DocumentVersion;
 import studio.one.application.document.domain.model.DocumentVersionBundle;
 import studio.one.application.document.service.DocumentService;
+import studio.one.platform.constant.PropertyKeys;
 
-@RestController
-@RequestMapping("/api/documents")
+@RestController 
+@RequestMapping("${" + PropertyKeys.Features.PREFIX + ".document.web.base-path:/api/mgmt/documents}")
 @RequiredArgsConstructor
 public class DocumentController {
 
