@@ -1,15 +1,14 @@
 package studio.one.application.document.autoconfigure;
 
-import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityManager;
- 
+import javax.persistence.EntityManagerFactory;
+
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
@@ -18,15 +17,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RestControllerAdvice; 
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
 import lombok.extern.slf4j.Slf4j;
 import studio.one.application.document.autoconfigure.condition.ConditionalOnDocumentPersistence;
 import studio.one.application.document.persistence.DocumentDao;
@@ -40,15 +40,14 @@ import studio.one.application.document.persistence.jpa.repo.DocumentBodyVersionR
 import studio.one.application.document.persistence.jpa.repo.DocumentPropertyRepository;
 import studio.one.application.document.persistence.jpa.repo.DocumentRepository;
 import studio.one.application.document.persistence.jpa.repo.DocumentVersionRepository;
-import studio.one.application.document.service.DocumentService;
-import studio.one.application.document.web.controller.DocumentController;
 import studio.one.application.document.web.DocumentExceptionHandler;
+import studio.one.application.document.web.controller.DocumentController;
 import studio.one.platform.autoconfigure.EntityScanRegistrarSupport;
 import studio.one.platform.autoconfigure.I18nKeys;
 import studio.one.platform.autoconfigure.PersistenceProperties;
+import studio.one.platform.component.State;
 import studio.one.platform.constant.PropertyKeys;
 import studio.one.platform.constant.ServiceNames;
-import studio.one.platform.component.State;
 import studio.one.platform.service.I18n;
 import studio.one.platform.util.I18nUtils;
 import studio.one.platform.util.LogUtils;
