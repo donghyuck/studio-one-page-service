@@ -371,6 +371,8 @@ public class DocumentDaoJpa implements DocumentDao {
         version.setCreatedBy(cmd.getActorUserId());
         version.setCreatedAt(now);
         blockVersionRepo.save(version);
+        doc.setUpdatedBy(cmd.getActorUserId());
+        doc.setUpdatedAt(now);
         return block.getBlockId();
     }
 
@@ -402,6 +404,8 @@ public class DocumentDaoJpa implements DocumentDao {
         block.setUpdatedBy(cmd.getActorUserId());
         block.setUpdatedAt(OffsetDateTime.now());
         blockRepo.save(block);
+        doc.setUpdatedBy(cmd.getActorUserId());
+        doc.setUpdatedAt(block.getUpdatedAt());
         DocumentBlockVersionEntity version = new DocumentBlockVersionEntity();
         version.setId(new DocumentBlockVersionId(block.getBlockId(), block.getDocumentId(), doc.getCurrentVersionId()));
         version.setParentBlockId(cmd.getParentBlockId());
@@ -442,6 +446,8 @@ public class DocumentDaoJpa implements DocumentDao {
         block.setUpdatedBy(cmd.getActorUserId());
         block.setUpdatedAt(OffsetDateTime.now());
         blockRepo.save(block);
+        doc.setUpdatedBy(cmd.getActorUserId());
+        doc.setUpdatedAt(block.getUpdatedAt());
         DocumentBlockVersionEntity version = new DocumentBlockVersionEntity();
         version.setId(new DocumentBlockVersionId(block.getBlockId(), block.getDocumentId(), doc.getCurrentVersionId()));
         version.setParentBlockId(cmd.getParentBlockId());
@@ -471,6 +477,8 @@ public class DocumentDaoJpa implements DocumentDao {
         block.setUpdatedBy(cmd.getActorUserId());
         block.setUpdatedAt(OffsetDateTime.now());
         blockRepo.save(block);
+        doc.setUpdatedBy(cmd.getActorUserId());
+        doc.setUpdatedAt(block.getUpdatedAt());
         DocumentBlockVersionEntity version = new DocumentBlockVersionEntity();
         version.setId(new DocumentBlockVersionId(blockId, block.getDocumentId(), doc.getCurrentVersionId()));
         version.setParentBlockId(block.getParentBlockId());

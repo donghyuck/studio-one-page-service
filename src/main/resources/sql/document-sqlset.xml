@@ -62,6 +62,15 @@
         ]]>
     </sql>
 
+    <sql id="touchDocument">
+        <![CDATA[
+        UPDATE "TB_APPLICATION_DOCUMENT"
+           SET "UPDATED_BY" = :updatedBy,
+               "UPDATED_AT" = :updatedAt
+         WHERE "DOCUMENT_ID" = :documentId
+        ]]>
+    </sql>
+
     <sql id="selectDocument">
         <![CDATA[
         SELECT *

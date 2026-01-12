@@ -69,6 +69,9 @@ public class DocumentDaoJdbc implements DocumentDao {
     @SqlStatement("data.document.updateCurrentVersion")
     private String updateCurrentVersionSql;
 
+    @SqlStatement("data.document.touchDocument")
+    private String touchDocumentSql;
+
     @SqlStatement("data.document.selectDocument")
     private String selectDocumentSql;
 
@@ -219,6 +222,15 @@ public class DocumentDaoJdbc implements DocumentDao {
 
     private static Timestamp ts(OffsetDateTime t) {
         return t == null ? null : Timestamp.from(t.toInstant());
+    }
+
+    private void touchDocument(long documentId, long actorUserId, OffsetDateTime now) {
+        jdbc.update(
+                touchDocumentSql,
+                Map.of(
+                        "documentId", documentId,
+                        "updatedBy", actorUserId,
+                        "updatedAt", ts(now)));
     }
 
     private final RowMapper<Document> documentMapper = new RowMapper<Document>() {
@@ -651,18 +663,19 @@ public class DocumentDaoJdbc implements DocumentDao {
         if (versionId != null) {
             jdbc.update(
                     insertBlockVersionSql,
-                    Map.of(
-                            "blockId", blockId,
-                            "documentId", cmd.getDocumentId(),
-                            "versionId", versionId,
-                            "parentBlockId", cmd.getParentBlockId(),
-                            "blockType", cmd.getBlockType(),
-                            "blockData", cmd.getBlockData(),
-                            "sortOrder", sortOrder,
-                            "isDeleted", false,
-                            "createdBy", cmd.getActorUserId(),
-                            "createdAt", ts(now)));
+                    new MapSqlParameterSource()
+                            .addValue("blockId", blockId)
+                            .addValue("documentId", cmd.getDocumentId())
+                            .addValue("versionId", versionId)
+                            .addValue("parentBlockId", cmd.getParentBlockId())
+                            .addValue("blockType", cmd.getBlockType())
+                            .addValue("blockData", cmd.getBlockData())
+                            .addValue("sortOrder", sortOrder)
+                            .addValue("isDeleted", false)
+                            .addValue("createdBy", cmd.getActorUserId())
+                            .addValue("createdAt", ts(now)));
         }
+        touchDocument(cmd.getDocumentId(), cmd.getActorUserId(), now);
         return blockId;
     }
 
@@ -729,6 +742,7 @@ public class DocumentDaoJdbc implements DocumentDao {
                         .addValue("sortOrder", nextSortOrder)
                         .addValue("updatedBy", cmd.getActorUserId())
                         .addValue("updatedAt", ts(now)));
+        touchDocument(documentId, cmd.getActorUserId(), now);
         if (versionId == null) {
             return;
         }
@@ -826,6 +840,7 @@ public class DocumentDaoJdbc implements DocumentDao {
                         .addValue("sortOrder", nextSortOrder)
                         .addValue("updatedBy", cmd.getActorUserId())
                         .addValue("updatedAt", ts(now)));
+        touchDocument(documentId, cmd.getActorUserId(), now);
         if (versionId == null) {
             return;
         }
@@ -869,6 +884,7 @@ public class DocumentDaoJdbc implements DocumentDao {
     @Override
     @Transactional
     public void deleteBlock(DeleteBlockCommand cmd) {
+        OffsetDateTime now = OffsetDateTime.now();
         long blockId = cmd.getBlockId();
         Map<String, Object> meta = null;
         try {
@@ -912,7 +928,7 @@ public class DocumentDaoJdbc implements DocumentDao {
                                 "sortOrder", sortOrder == null ? 0 : sortOrder,
                                 "isDeleted", true,
                                 "createdBy", cmd.getActorUserId(),
-                                "createdAt", ts(OffsetDateTime.now())));
+                                "createdAt", ts(now)));
                 if (sortOrder != null) {
                     jdbc.update(
                             shiftBlockVersionSortOrderDownSql,
@@ -927,8 +943,9 @@ public class DocumentDaoJdbc implements DocumentDao {
                     new MapSqlParameterSource()
                             .addValue("blockId", blockId)
                             .addValue("updatedBy", cmd.getActorUserId())
-                            .addValue("updatedAt", ts(OffsetDateTime.now()))
+                            .addValue("updatedAt", ts(now))
                             .addValue("isDeleted", true));
+            touchDocument(documentId, cmd.getActorUserId(), now);
             if (sortOrder != null) {
                 jdbc.update(
                         shiftBlockSortOrderDownSql,
