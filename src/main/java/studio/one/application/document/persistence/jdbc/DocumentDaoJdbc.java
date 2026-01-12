@@ -36,6 +36,7 @@ import studio.one.application.document.domain.model.DocumentBlock;
 import studio.one.application.document.domain.exception.BlockConflictException;
 import studio.one.application.document.domain.exception.DocumentConflictException;
 import studio.one.application.document.domain.model.Document;
+import studio.one.application.document.domain.model.DocumentSummary;
 import studio.one.application.document.domain.model.DocumentVersion;
 import studio.one.application.document.domain.model.DocumentVersionBundle;
 import studio.one.application.document.domain.exception.DocumentNotFoundException;
@@ -86,11 +87,17 @@ public class DocumentDaoJdbc implements DocumentDao {
     @SqlStatement("data.document.countDocuments")
     private String countDocumentsSql;
 
+    @SqlStatement("data.document.selectDocumentSummaries")
+    private String selectDocumentSummariesSql;
+
     @SqlStatement("data.document.selectDocumentsByObject")
     private String selectDocumentsByObjectSql;
 
     @SqlStatement("data.document.countDocumentsByObject")
     private String countDocumentsByObjectSql;
+
+    @SqlStatement("data.document.selectDocumentSummariesByObject")
+    private String selectDocumentSummariesByObjectSql;
 
     @SqlStatement("data.document.selectDocumentsByNameOrBody")
     private String selectDocumentsByNameOrBodySql;
@@ -98,17 +105,26 @@ public class DocumentDaoJdbc implements DocumentDao {
     @SqlStatement("data.document.countDocumentsByNameOrBody")
     private String countDocumentsByNameOrBodySql;
 
+    @SqlStatement("data.document.selectDocumentSummariesByNameOrBody")
+    private String selectDocumentSummariesByNameOrBodySql;
+
     @SqlStatement("data.document.selectDocumentsByParent")
     private String selectDocumentsByParentSql;
 
     @SqlStatement("data.document.countDocumentsByParent")
     private String countDocumentsByParentSql;
 
+    @SqlStatement("data.document.selectDocumentSummariesByParent")
+    private String selectDocumentSummariesByParentSql;
+
     @SqlStatement("data.document.selectRootDocuments")
     private String selectRootDocumentsSql;
 
     @SqlStatement("data.document.countRootDocuments")
     private String countRootDocumentsSql;
+
+    @SqlStatement("data.document.selectRootDocumentSummaries")
+    private String selectRootDocumentSummariesSql;
 
     @SqlStatement("data.document.updateMeta")
     private String updateMetaSql;
@@ -226,6 +242,26 @@ public class DocumentDaoJdbc implements DocumentDao {
             d.setUpdatedBy(ub == null ? null : ((Number) ub).longValue());
             d.setUpdatedAt(rs.getObject("UPDATED_AT", java.time.OffsetDateTime.class));
             return d;
+        }
+    };
+
+    private final RowMapper<DocumentSummary> documentSummaryMapper = new RowMapper<DocumentSummary>() {
+        @Override
+        public DocumentSummary mapRow(ResultSet rs, int rowNum) throws SQLException {
+            return new DocumentSummary(
+                    rs.getLong("DOCUMENT_ID"),
+                    rs.getObject("OBJECT_TYPE", Integer.class),
+                    rs.getObject("OBJECT_ID", Long.class),
+                    rs.getObject("PARENT_DOCUMENT_ID", Long.class),
+                    rs.getObject("SORT_ORDER", Integer.class),
+                    rs.getString("NAME"),
+                    rs.getString("LATEST_TITLE"),
+                    rs.getObject("VERSION_ID", Integer.class),
+                    rs.getLong("CREATED_BY"),
+                    rs.getObject("UPDATED_BY", Long.class),
+                    rs.getObject("CREATED_AT", OffsetDateTime.class),
+                    rs.getObject("UPDATED_AT", OffsetDateTime.class)
+            );
         }
     };
 
@@ -501,6 +537,39 @@ public class DocumentDaoJdbc implements DocumentDao {
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("parentDocumentId", parentDocumentId);
         return queryDocumentPage(selectDocumentsByParentSql, countDocumentsByParentSql, params, pageable);
+    }
+
+    @Override
+    public Page<DocumentSummary> findSummaryAll(Pageable pageable) {
+        return queryDocumentSummaryPage(selectDocumentSummariesSql, countDocumentsSql, new MapSqlParameterSource(), pageable);
+    }
+
+    @Override
+    public Page<DocumentSummary> findSummaryByNameOrBody(String keyword, Pageable pageable) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return findSummaryAll(pageable);
+        }
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("keyword", "%" + keyword.trim().toLowerCase(Locale.ROOT) + "%");
+        return queryDocumentSummaryPage(selectDocumentSummariesByNameOrBodySql, countDocumentsByNameOrBodySql, params, pageable);
+    }
+
+    @Override
+    public Page<DocumentSummary> findSummaryByObjectTypeAndObjectId(int objectType, long objectId, Pageable pageable) {
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("objectType", objectType)
+                .addValue("objectId", objectId);
+        return queryDocumentSummaryPage(selectDocumentSummariesByObjectSql, countDocumentsByObjectSql, params, pageable);
+    }
+
+    @Override
+    public Page<DocumentSummary> findSummaryByParentDocumentId(Long parentDocumentId, Pageable pageable) {
+        if (parentDocumentId == null) {
+            return queryDocumentSummaryPage(selectRootDocumentSummariesSql, countRootDocumentsSql, new MapSqlParameterSource(), pageable);
+        }
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("parentDocumentId", parentDocumentId);
+        return queryDocumentSummaryPage(selectDocumentSummariesByParentSql, countDocumentsByParentSql, params, pageable);
     }
 
     @Override
@@ -1004,6 +1073,21 @@ public class DocumentDaoJdbc implements DocumentDao {
                 .addValue("limit", limit)
                 .addValue("offset", offset);
         List<Document> rows = jdbc.query(selectSql, selectParams, documentMapper);
+        Long total = jdbc.queryForObject(countSql, params, Long.class);
+        long totalCount = total == null ? 0 : total;
+        return new PageImpl<>(rows, pageable, totalCount);
+    }
+
+    private Page<DocumentSummary> queryDocumentSummaryPage(String selectSql,
+            String countSql,
+            MapSqlParameterSource params,
+            Pageable pageable) {
+        int limit = pageable.isUnpaged() ? Integer.MAX_VALUE : pageable.getPageSize();
+        long offset = pageable.isUnpaged() ? 0 : pageable.getOffset();
+        MapSqlParameterSource selectParams = new MapSqlParameterSource(params.getValues())
+                .addValue("limit", limit)
+                .addValue("offset", offset);
+        List<DocumentSummary> rows = jdbc.query(selectSql, selectParams, documentSummaryMapper);
         Long total = jdbc.queryForObject(countSql, params, Long.class);
         long totalCount = total == null ? 0 : total;
         return new PageImpl<>(rows, pageable, totalCount);

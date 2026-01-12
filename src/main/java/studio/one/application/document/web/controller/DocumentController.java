@@ -3,8 +3,10 @@ package studio.one.application.document.web.controller;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -14,6 +16,9 @@ import javax.validation.constraints.NotNull;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.json.MappingJacksonValue;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,6 +35,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+
 import lombok.RequiredArgsConstructor;
 import studio.one.application.document.command.CreateBlockCommand;
 import studio.one.application.document.command.CreateDocumentCommand;
@@ -41,10 +50,12 @@ import studio.one.application.document.command.UpdateBlockCommand;
 import studio.one.application.document.command.UpdateDocumentMetaCommand;
 import studio.one.application.document.domain.model.DocumentBlock;
 import studio.one.application.document.domain.model.Document;
+import studio.one.application.document.domain.model.DocumentSummary;
 import studio.one.application.document.domain.model.DocumentVersion;
 import studio.one.application.document.domain.model.DocumentVersionBundle;
 import studio.one.application.document.service.DocumentService;
 import studio.one.platform.constant.PropertyKeys;
+import studio.one.platform.web.dto.ApiResponse;
 
 @RestController 
 @RequestMapping("${" + PropertyKeys.Features.PREFIX + ".document.web.base-path:/api/mgmt/documents}")
@@ -117,35 +128,173 @@ public class DocumentController {
         }
     }
 
+    @JsonFilter("documentSummaryFilter")
+    public record DocumentSummaryDto(
+            long documentId,
+            Integer objectType,
+            Long objectId,
+            Long parentDocumentId,
+            Integer sortOrder,
+            String name,
+            String title,
+            Integer latestVersionId,
+            long createdBy,
+            Long updatedBy,
+            OffsetDateTime createdAt,
+            OffsetDateTime updatedAt
+    ) {}
+
     @PostMapping
     @PreAuthorize("@endpointAuthz.can('features:document','create')")
-    public ResponseEntity<Map<String, Object>> create(@Valid @RequestBody CreateDocumentRequest req,
+    public ResponseEntity<ApiResponse<Map<String, Object>>> create(@Valid @RequestBody CreateDocumentRequest req,
             @AuthenticationPrincipal(expression = "userId") Long userId) {
         long id = service.create(new CreateDocumentCommand(
                 req.objectType, req.objectId, req.parentDocumentId, req.sortOrder, req.name, req.title,
                 req.bodyText, req.bodyType, req.properties, requireUserId(userId)));
-        return ResponseEntity.ok(Map.of("documentId", id, "versionId", 1));
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("documentId", id, "versionId", 1)));
     }
 
     @PostMapping("/{documentId}/versions")
     @PreAuthorize("@endpointAuthz.can('features:document','write')")
-    public ResponseEntity<Map<String, Object>> newVersion(@PathVariable long documentId,
+    public ResponseEntity<ApiResponse<Map<String, Object>>> newVersion(@PathVariable long documentId,
             @Valid @RequestBody CreateVersionRequest req,
             @AuthenticationPrincipal(expression = "userId") Long userId) {
         int v = service.newVersion(documentId, new CreateVersionCommand(
                 req.title, req.bodyText, req.bodyType, req.properties, requireUserId(userId)));
-        return ResponseEntity.ok(Map.of("documentId", documentId, "versionId", v));
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("documentId", documentId, "versionId", v)));
     }
 
     @GetMapping("/{documentId}")
     @PreAuthorize("@endpointAuthz.can('features:document','read')")
-    public ResponseEntity<DocumentVersionBundle> latest(@PathVariable long documentId) {
+    public ResponseEntity<ApiResponse<DocumentVersionBundle>> latest(@PathVariable long documentId) {
         return withEtag(service.getLatest(documentId));
+    }
+
+    @GetMapping
+    @PreAuthorize("@endpointAuthz.can('features:document','read')")
+    public ResponseEntity<MappingJacksonValue> list(
+            @RequestParam(required = false) Integer objectType,
+            @RequestParam(required = false) Long objectId,
+            @RequestParam(required = false) Long parentDocumentId,
+            @RequestParam(required = false) String q,
+            @RequestParam(name = "in", required = false) String in,
+            @RequestParam(required = false) String fields,
+            Pageable pageable) {
+        String keyword = q == null ? null : q.trim();
+        Page<DocumentSummaryDto> page;
+        if (keyword != null && !keyword.isBlank()) {
+            validateSearchFields(in);
+            page = service.findSummaryByNameOrBody(keyword, pageable).map(this::toSummary);
+            return withFieldFilter(page, fields);
+        }
+        if (objectType != null || objectId != null) {
+            if (objectType == null || objectId == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "objectType and objectId are required together");
+            }
+            page = service.findSummaryByObjectTypeAndObjectId(objectType, objectId, pageable).map(this::toSummary);
+            return withFieldFilter(page, fields);
+        }
+        if (parentDocumentId != null) {
+            page = service.findSummaryByParentDocumentId(parentDocumentId, pageable).map(this::toSummary);
+            return withFieldFilter(page, fields);
+        }
+        page = service.findSummaryAll(pageable).map(this::toSummary);
+        return withFieldFilter(page, fields);
+    }
+
+    private DocumentSummaryDto toSummary(DocumentSummary doc) {
+        return new DocumentSummaryDto(
+                doc.documentId(),
+                doc.objectType(),
+                doc.objectId(),
+                doc.parentDocumentId(),
+                doc.sortOrder(),
+                doc.name(),
+                doc.title(),
+                doc.latestVersionId(),
+                doc.createdBy(),
+                doc.updatedBy(),
+                doc.createdAt(),
+                doc.updatedAt()
+        );
+    }
+
+    private ResponseEntity<MappingJacksonValue> withFieldFilter(Page<DocumentSummaryDto> page, String fields) {
+        MappingJacksonValue body = new MappingJacksonValue(ApiResponse.ok(page));
+        Set<String> selected = parseFields(fields);
+        SimpleBeanPropertyFilter filter = selected == null
+                ? SimpleBeanPropertyFilter.serializeAll()
+                : SimpleBeanPropertyFilter.filterOutAllExcept(selected);
+        SimpleFilterProvider filters = new SimpleFilterProvider()
+                .addFilter("documentSummaryFilter", filter);
+        body.setFilters(filters);
+        return ResponseEntity.ok(body);
+    }
+
+    private Set<String> parseFields(String fields) {
+        if (fields == null || fields.isBlank()) {
+            return null;
+        }
+        Set<String> selected = new LinkedHashSet<>();
+        String[] tokens = fields.split(",");
+        for (String token : tokens) {
+            String raw = token == null ? "" : token.trim();
+            if (raw.isEmpty()) {
+                continue;
+            }
+            String field = normalizeField(raw);
+            if (field == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported field: " + raw);
+            }
+            selected.add(field);
+        }
+        if (selected.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "fields is empty");
+        }
+        return selected;
+    }
+
+    private String normalizeField(String field) {
+        String key = field.trim().toLowerCase();
+        if (key.isEmpty()) {
+            return null;
+        }
+        return switch (key) {
+            case "documentid" -> "documentId";
+            case "objecttype" -> "objectType";
+            case "objectid" -> "objectId";
+            case "parentdocumentid" -> "parentDocumentId";
+            case "sortorder" -> "sortOrder";
+            case "name" -> "name";
+            case "title" -> "title";
+            case "latestversionid" -> "latestVersionId";
+            case "createdby" -> "createdBy";
+            case "updatedby" -> "updatedBy";
+            case "createdat" -> "createdAt";
+            case "updatedat" -> "updatedAt";
+            default -> null;
+        };
+    }
+
+    private void validateSearchFields(String in) {
+        if (in == null || in.isBlank()) {
+            return;
+        }
+        String[] tokens = in.split(",");
+        for (String token : tokens) {
+            String field = token == null ? "" : token.trim().toLowerCase();
+            if (field.isBlank()) {
+                continue;
+            }
+            if (!field.equals("name") && !field.equals("body")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported search field: " + field);
+            }
+        }
     }
 
     @GetMapping("/{documentId}/versions/{versionId}")
     @PreAuthorize("@endpointAuthz.can('features:document','read')")
-    public ResponseEntity<DocumentVersionBundle> version(@PathVariable long documentId, @PathVariable int versionId) {
+    public ResponseEntity<ApiResponse<DocumentVersionBundle>> version(@PathVariable long documentId, @PathVariable int versionId) {
         return withEtag(service.getVersion(documentId, versionId));
     }
 
@@ -162,12 +311,12 @@ public class DocumentController {
 
     @PostMapping("/{documentId}/blocks")
     @PreAuthorize("@endpointAuthz.can('features:document','write')")
-    public ResponseEntity<Map<String, Object>> createBlock(@PathVariable long documentId,
+    public ResponseEntity<ApiResponse<Map<String, Object>>> createBlock(@PathVariable long documentId,
             @Valid @RequestBody CreateBlockRequest req,
             @AuthenticationPrincipal(expression = "userId") Long userId) {
         long blockId = service.createBlock(new CreateBlockCommand(
                 documentId, req.parentBlockId, req.blockType, req.blockData, req.sortOrder, requireUserId(userId)));
-        return ResponseEntity.ok(Map.of("blockId", blockId));
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("blockId", blockId)));
     }
 
     @PutMapping("/{documentId}/blocks/{blockId}")
@@ -207,14 +356,14 @@ public class DocumentController {
 
     @GetMapping("/{documentId}/blocks")
     @PreAuthorize("@endpointAuthz.can('features:document','read')")
-    public ResponseEntity<List<DocumentBlock>> listBlocks(@PathVariable long documentId) {
+    public ResponseEntity<ApiResponse<List<DocumentBlock>>> listBlocks(@PathVariable long documentId) {
         List<DocumentBlock> blocks = service.listBlocks(documentId);
         return withEtag(blocks);
     }
 
     @GetMapping("/{documentId}/versions/{versionId}/blocks")
     @PreAuthorize("@endpointAuthz.can('features:document','read')")
-    public ResponseEntity<List<DocumentBlock>> listBlocksByVersion(@PathVariable long documentId,
+    public ResponseEntity<ApiResponse<List<DocumentBlock>>> listBlocksByVersion(@PathVariable long documentId,
             @PathVariable int versionId,
             @RequestParam(name = "includeDeleted", defaultValue = "false") boolean includeDeleted,
             @RequestParam(name = "parentBlockId", required = false) Long parentBlockId) {
@@ -229,7 +378,7 @@ public class DocumentController {
 
     @GetMapping("/{documentId}/blocks/tree")
     @PreAuthorize("@endpointAuthz.can('features:document','read')")
-    public ResponseEntity<List<DocumentBlockNode>> listBlocksTree(@PathVariable long documentId,
+    public ResponseEntity<ApiResponse<List<DocumentBlockNode>>> listBlocksTree(@PathVariable long documentId,
             @RequestParam(name = "versionId", required = false) Integer versionId,
             @RequestParam(name = "includeDeleted", defaultValue = "false") boolean includeDeleted) {
         List<DocumentBlock> blocks = versionId == null
@@ -238,7 +387,7 @@ public class DocumentController {
                     ? service.listBlocksIncludingDeleted(documentId, versionId)
                     : service.listBlocks(documentId, versionId));
         List<DocumentBlockNode> tree = buildTree(blocks);
-        return ResponseEntity.ok(tree);
+        return ResponseEntity.ok(ApiResponse.ok(tree));
     }
 
     @DeleteMapping("/{documentId}")
@@ -280,7 +429,7 @@ public class DocumentController {
                 .collect(java.util.stream.Collectors.toList());
     }
 
-    private ResponseEntity<List<DocumentBlock>> withEtag(List<DocumentBlock> blocks) {
+    private ResponseEntity<ApiResponse<List<DocumentBlock>>> withEtag(List<DocumentBlock> blocks) {
         OffsetDateTime latest = null;
         for (DocumentBlock block : blocks) {
             OffsetDateTime candidate = block.getUpdatedAt() != null ? block.getUpdatedAt() : block.getCreatedAt();
@@ -292,17 +441,17 @@ public class DocumentController {
             }
         }
         if (latest == null) {
-            return ResponseEntity.ok(blocks);
+            return ResponseEntity.ok(ApiResponse.ok(blocks));
         }
-        return ResponseEntity.ok().eTag("\"" + latest.toString() + "\"").body(blocks);
+        return ResponseEntity.ok().eTag("\"" + latest.toString() + "\"").body(ApiResponse.ok(blocks));
     }
 
-    private ResponseEntity<DocumentVersionBundle> withEtag(DocumentVersionBundle bundle) {
+    private ResponseEntity<ApiResponse<DocumentVersionBundle>> withEtag(DocumentVersionBundle bundle) {
         OffsetDateTime latest = latestUpdatedAt(bundle);
         if (latest == null) {
-            return ResponseEntity.ok(bundle);
+            return ResponseEntity.ok(ApiResponse.ok(bundle));
         }
-        return ResponseEntity.ok().eTag("\"" + latest.toString() + "\"").body(bundle);
+        return ResponseEntity.ok().eTag("\"" + latest.toString() + "\"").body(ApiResponse.ok(bundle));
     }
 
     private OffsetDateTime latestUpdatedAt(DocumentVersionBundle bundle) {

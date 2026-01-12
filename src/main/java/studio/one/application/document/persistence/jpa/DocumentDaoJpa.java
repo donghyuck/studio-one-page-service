@@ -43,11 +43,13 @@ import studio.one.application.document.persistence.jpa.repo.DocumentBlockReposit
 import studio.one.application.document.persistence.jpa.repo.DocumentBlockVersionRepository;
 import studio.one.application.document.persistence.jpa.repo.DocumentPropertyRepository;
 import studio.one.application.document.persistence.jpa.repo.DocumentRepository;
+import studio.one.application.document.persistence.jpa.repo.DocumentSummaryProjection;
 import studio.one.application.document.persistence.jpa.repo.DocumentVersionRepository;
 import studio.one.application.document.domain.model.DocumentBlock;
 import studio.one.application.document.domain.exception.BlockConflictException;
 import studio.one.application.document.domain.exception.DocumentConflictException;
 import studio.one.application.document.domain.model.Document;
+import studio.one.application.document.domain.model.DocumentSummary;
 import studio.one.application.document.domain.model.DocumentVersion;
 import studio.one.application.document.domain.model.DocumentVersionBundle;
 import studio.one.application.document.domain.exception.DocumentNotFoundException;
@@ -283,6 +285,33 @@ public class DocumentDaoJpa implements DocumentDao {
     }
 
     @Override
+    public Page<DocumentSummary> findSummaryAll(Pageable pageable) {
+        return docRepo.findSummaryAll(pageable).map(this::toSummary);
+    }
+
+    @Override
+    public Page<DocumentSummary> findSummaryByNameOrBody(String keyword, Pageable pageable) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return findSummaryAll(pageable);
+        }
+        String like = "%" + keyword.trim().toLowerCase(Locale.ROOT) + "%";
+        return docRepo.findSummaryByNameOrBody(like, pageable).map(this::toSummary);
+    }
+
+    @Override
+    public Page<DocumentSummary> findSummaryByObjectTypeAndObjectId(int objectType, long objectId, Pageable pageable) {
+        return docRepo.findSummaryByObjectTypeAndObjectId(objectType, objectId, pageable).map(this::toSummary);
+    }
+
+    @Override
+    public Page<DocumentSummary> findSummaryByParentDocumentId(Long parentDocumentId, Pageable pageable) {
+        if (parentDocumentId == null) {
+            return docRepo.findSummaryByParentDocumentIdIsNull(pageable).map(this::toSummary);
+        }
+        return docRepo.findSummaryByParentDocumentId(parentDocumentId, pageable).map(this::toSummary);
+    }
+
+    @Override
     @Transactional
     public void updateDocumentMeta(UpdateDocumentMetaCommand cmd) {
         OffsetDateTime now = OffsetDateTime.now();
@@ -498,6 +527,23 @@ public class DocumentDaoJpa implements DocumentDao {
             e.getCreatedAt(),
             e.getUpdatedBy(),
             e.getUpdatedAt()
+        );
+    }
+
+    private DocumentSummary toSummary(DocumentSummaryProjection p) {
+        return new DocumentSummary(
+            p.getDocumentId(),
+            p.getObjectType(),
+            p.getObjectId(),
+            p.getParentDocumentId(),
+            p.getSortOrder(),
+            p.getName(),
+            p.getTitle(),
+            p.getLatestVersionId(),
+            p.getCreatedBy() == null ? 0L : p.getCreatedBy(),
+            p.getUpdatedBy(),
+            p.getCreatedAt(),
+            p.getUpdatedAt()
         );
     }
 

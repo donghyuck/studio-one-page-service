@@ -21,6 +21,7 @@ import studio.one.application.document.command.UpdateBlockCommand;
 import studio.one.application.document.command.UpdateDocumentMetaCommand;
 import studio.one.application.document.domain.model.DocumentBlock;
 import studio.one.application.document.domain.model.Document;
+import studio.one.application.document.domain.model.DocumentSummary;
 import studio.one.application.document.domain.model.DocumentVersionBundle;
 import studio.one.application.document.domain.exception.DocumentNotFoundException;
 
@@ -70,6 +71,26 @@ public class DocumentService {
     @Transactional(readOnly = true)
     public Page<Document> findByParentDocumentId(Long parentDocumentId, Pageable pageable) {
         return dao.findByParentDocumentId(parentDocumentId, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DocumentSummary> findSummaryAll(Pageable pageable) {
+        return dao.findSummaryAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DocumentSummary> findSummaryByNameOrBody(String keyword, Pageable pageable) {
+        return dao.findSummaryByNameOrBody(keyword, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DocumentSummary> findSummaryByObjectTypeAndObjectId(int objectType, long objectId, Pageable pageable) {
+        return dao.findSummaryByObjectTypeAndObjectId(objectType, objectId, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DocumentSummary> findSummaryByParentDocumentId(Long parentDocumentId, Pageable pageable) {
+        return dao.findSummaryByParentDocumentId(parentDocumentId, pageable);
     }
 
     @Transactional

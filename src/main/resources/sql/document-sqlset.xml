@@ -129,6 +129,19 @@
         ]]>
     </sql>
 
+    <sql id="selectDocumentSummaries">
+        <![CDATA[
+        SELECT d.*,
+               v."TITLE" AS "LATEST_TITLE"
+          FROM "TB_APPLICATION_DOCUMENT" d
+          LEFT JOIN "TB_APPLICATION_DOCUMENT_VERSION" v
+            ON v."DOCUMENT_ID" = d."DOCUMENT_ID"
+           AND v."VERSION_ID" = d."VERSION_ID"
+         ORDER BY d."DOCUMENT_ID" DESC
+         LIMIT :limit OFFSET :offset
+        ]]>
+    </sql>
+
     <sql id="countDocuments">
         <![CDATA[
         SELECT COUNT(*)
@@ -147,12 +160,41 @@
         ]]>
     </sql>
 
+    <sql id="selectDocumentSummariesByObject">
+        <![CDATA[
+        SELECT d.*,
+               v."TITLE" AS "LATEST_TITLE"
+          FROM "TB_APPLICATION_DOCUMENT" d
+          LEFT JOIN "TB_APPLICATION_DOCUMENT_VERSION" v
+            ON v."DOCUMENT_ID" = d."DOCUMENT_ID"
+           AND v."VERSION_ID" = d."VERSION_ID"
+         WHERE d."OBJECT_TYPE" = :objectType
+           AND d."OBJECT_ID" = :objectId
+         ORDER BY d."DOCUMENT_ID" DESC
+         LIMIT :limit OFFSET :offset
+        ]]>
+    </sql>
+
     <sql id="selectDocumentsByParent">
         <![CDATA[
         SELECT *
           FROM "TB_APPLICATION_DOCUMENT"
          WHERE "PARENT_DOCUMENT_ID" = :parentDocumentId
          ORDER BY "SORT_ORDER" ASC, "DOCUMENT_ID" ASC
+         LIMIT :limit OFFSET :offset
+        ]]>
+    </sql>
+
+    <sql id="selectDocumentSummariesByParent">
+        <![CDATA[
+        SELECT d.*,
+               v."TITLE" AS "LATEST_TITLE"
+          FROM "TB_APPLICATION_DOCUMENT" d
+          LEFT JOIN "TB_APPLICATION_DOCUMENT_VERSION" v
+            ON v."DOCUMENT_ID" = d."DOCUMENT_ID"
+           AND v."VERSION_ID" = d."VERSION_ID"
+         WHERE d."PARENT_DOCUMENT_ID" = :parentDocumentId
+         ORDER BY d."SORT_ORDER" ASC, d."DOCUMENT_ID" ASC
          LIMIT :limit OFFSET :offset
         ]]>
     </sql>
@@ -171,6 +213,20 @@
           FROM "TB_APPLICATION_DOCUMENT"
          WHERE "PARENT_DOCUMENT_ID" IS NULL
          ORDER BY "SORT_ORDER" ASC, "DOCUMENT_ID" ASC
+         LIMIT :limit OFFSET :offset
+        ]]>
+    </sql>
+
+    <sql id="selectRootDocumentSummaries">
+        <![CDATA[
+        SELECT d.*,
+               v."TITLE" AS "LATEST_TITLE"
+          FROM "TB_APPLICATION_DOCUMENT" d
+          LEFT JOIN "TB_APPLICATION_DOCUMENT_VERSION" v
+            ON v."DOCUMENT_ID" = d."DOCUMENT_ID"
+           AND v."VERSION_ID" = d."VERSION_ID"
+         WHERE d."PARENT_DOCUMENT_ID" IS NULL
+         ORDER BY d."SORT_ORDER" ASC, d."DOCUMENT_ID" ASC
          LIMIT :limit OFFSET :offset
         ]]>
     </sql>
@@ -198,6 +254,23 @@
           FROM "TB_APPLICATION_DOCUMENT" d
           LEFT JOIN "TB_APPLICATION_DOCUMENT_BODY" b
             ON b."DOCUMENT_ID" = d."DOCUMENT_ID"
+         WHERE LOWER(d."NAME") LIKE :keyword
+            OR LOWER(b."BODY_TEXT") LIKE :keyword
+         ORDER BY d."DOCUMENT_ID" DESC
+         LIMIT :limit OFFSET :offset
+        ]]>
+    </sql>
+
+    <sql id="selectDocumentSummariesByNameOrBody">
+        <![CDATA[
+        SELECT DISTINCT d.*,
+               v."TITLE" AS "LATEST_TITLE"
+          FROM "TB_APPLICATION_DOCUMENT" d
+          LEFT JOIN "TB_APPLICATION_DOCUMENT_BODY" b
+            ON b."DOCUMENT_ID" = d."DOCUMENT_ID"
+          LEFT JOIN "TB_APPLICATION_DOCUMENT_VERSION" v
+            ON v."DOCUMENT_ID" = d."DOCUMENT_ID"
+           AND v."VERSION_ID" = d."VERSION_ID"
          WHERE LOWER(d."NAME") LIKE :keyword
             OR LOWER(b."BODY_TEXT") LIKE :keyword
          ORDER BY d."DOCUMENT_ID" DESC

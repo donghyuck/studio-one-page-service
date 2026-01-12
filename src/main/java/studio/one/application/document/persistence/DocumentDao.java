@@ -16,6 +16,7 @@ import studio.one.application.document.command.UpdateBlockCommand;
 import studio.one.application.document.command.UpdateDocumentMetaCommand;
 import studio.one.application.document.domain.model.DocumentBlock;
 import studio.one.application.document.domain.model.Document;
+import studio.one.application.document.domain.model.DocumentSummary;
 import studio.one.application.document.domain.model.DocumentVersion;
 import studio.one.application.document.domain.model.DocumentVersionBundle;
 import studio.one.platform.constant.ServiceNames;
@@ -45,6 +46,14 @@ public interface DocumentDao {
     Page<Document> findByObjectTypeAndObjectId(int objectType, long objectId, Pageable pageable);
 
     Page<Document> findByParentDocumentId(Long parentDocumentId, Pageable pageable);
+
+    Page<DocumentSummary> findSummaryAll(Pageable pageable);
+
+    Page<DocumentSummary> findSummaryByNameOrBody(String keyword, Pageable pageable);
+
+    Page<DocumentSummary> findSummaryByObjectTypeAndObjectId(int objectType, long objectId, Pageable pageable);
+
+    Page<DocumentSummary> findSummaryByParentDocumentId(Long parentDocumentId, Pageable pageable);
 
     void updateDocumentMeta(UpdateDocumentMetaCommand cmd);
 
