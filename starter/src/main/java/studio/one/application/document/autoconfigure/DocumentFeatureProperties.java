@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import studio.one.platform.autoconfigure.FeaturesProperties.FeatureToggle;
 import studio.one.platform.autoconfigure.PersistenceProperties;
-import studio.one.platform.autoconfigure.SimpleWebProperties;
+import studio.one.platform.autoconfigure.WebEndpointProperties;
 import studio.one.platform.constant.PropertyKeys;
 
 @ConfigurationProperties(prefix = PropertyKeys.Features.PREFIX + ".document")
@@ -14,7 +14,7 @@ import studio.one.platform.constant.PropertyKeys;
 @Setter
 public class DocumentFeatureProperties extends FeatureToggle {
 
-    private SimpleWebProperties web = new SimpleWebProperties();
+    private WebEndpointProperties web = new WebEndpointProperties();
 
     public PersistenceProperties.Type resolvePersistence(PersistenceProperties.Type globalDefault) {
         return super.resolvePersistence(globalDefault);

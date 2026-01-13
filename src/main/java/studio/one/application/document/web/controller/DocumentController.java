@@ -58,7 +58,7 @@ import studio.one.platform.constant.PropertyKeys;
 import studio.one.platform.web.dto.ApiResponse;
 
 @RestController 
-@RequestMapping("${" + PropertyKeys.Features.PREFIX + ".document.web.base-path:/api/mgmt/documents}")
+@RequestMapping("${" + PropertyKeys.Features.PREFIX + ".document.web.mgmt-base-path:/api/mgmt/documents}")
 @RequiredArgsConstructor
 public class DocumentController {
 

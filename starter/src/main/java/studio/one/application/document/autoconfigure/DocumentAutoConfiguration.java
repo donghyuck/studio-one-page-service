@@ -129,7 +129,7 @@ public class DocumentAutoConfiguration {
     
     @Configuration
     @ConditionalOnProperty(prefix = PropertyKeys.Features.PREFIX
-            + ".document.web", name = "enabled", havingValue = "true", matchIfMissing = true)
+            + ".document.web", name = "enabled", havingValue = "true", matchIfMissing = false)
     @Import({ DocumentController.class, DocumentExceptionHandler.class })
     static class DocumentWebConfig {
 
