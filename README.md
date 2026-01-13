@@ -26,19 +26,22 @@ Studio One platform 기반의 문서/페이지 서비스 모듈이다. 이 모�
 - 충돌 시 409 응답(`document_conflict`, `block_conflict`).
 
 ## API Summary
-- `POST /api/documents`
-- `POST /api/documents/{documentId}/versions`
-- `GET /api/documents/{documentId}` (ETag)
-- `GET /api/documents/{documentId}/versions/{versionId}` (ETag)
-- `PUT /api/documents/{documentId}/meta` (If-Match)
-- `DELETE /api/documents/{documentId}` (If-Match)
-- `POST /api/documents/{documentId}/blocks`
-- `PUT /api/documents/{documentId}/blocks/{blockId}` (If-Match)
-- `PATCH /api/documents/{documentId}/blocks/{blockId}/move` (If-Match)
-- `DELETE /api/documents/{documentId}/blocks/{blockId}` (If-Match)
-- `GET /api/documents/{documentId}/blocks` (ETag)
-- `GET /api/documents/{documentId}/versions/{versionId}/blocks?includeDeleted=&parentBlockId=`
-- `GET /api/documents/{documentId}/blocks/tree?versionId=&includeDeleted=`
+기본 Base Path는 `/api/mgmt/documents`이며 `features.document.web.mgmt-base-path`로 변경할 수 있다.
+
+- `POST /api/mgmt/documents`
+- `POST /api/mgmt/documents/{documentId}/versions`
+- `GET /api/mgmt/documents/{documentId}` (ETag)
+- `GET /api/mgmt/documents/{documentId}/versions/{versionId}` (ETag)
+- `PUT /api/mgmt/documents/{documentId}/meta` (If-Match)
+- `DELETE /api/mgmt/documents/{documentId}` (If-Match)
+- `POST /api/mgmt/documents/{documentId}/blocks`
+- `PUT /api/mgmt/documents/{documentId}/blocks/{blockId}` (If-Match)
+- `PATCH /api/mgmt/documents/{documentId}/blocks/{blockId}/move` (If-Match)
+- `DELETE /api/mgmt/documents/{documentId}/blocks/{blockId}` (If-Match)
+- `GET /api/mgmt/documents/{documentId}/blocks` (ETag)
+- `GET /api/mgmt/documents/{documentId}/versions/{versionId}/blocks?includeDeleted=&parentBlockId=`
+- `GET /api/mgmt/documents/{documentId}/blocks/tree?versionId=&includeDeleted=`
+- `GET /api/mgmt/documents?objectType=&objectId=&parentDocumentId=&q=&in=&fields=&page=&size=&sort=`
 
 ## Local Development
 - Build: `./gradlew build`
@@ -50,13 +53,31 @@ Studio One platform 기반의 문서/페이지 서비스 모듈이다. 이 모�
 - 모듈 위치: `starter`
 - artifactId: `studio-application-starter-document`
 - 자동 설정: `DocumentAutoConfiguration`, `DocumentJpaAutoConfiguration`
+- 관리자용 컨트롤러: `MgmtDocumentController`
 - 사용 예시:
   - `implementation("studio.one.starter:studio-application-starter-document:${VERSION}")`
+
+## Configuration
+```yaml
+features:
+  document:
+    enabled: true
+    web:
+      enabled: true
+      mgmt-base-path: /api/mgmt/documents
+```
+
+### 목록 조회 필터
+- `GET /api/mgmt/documents`는 조건에 따라 다른 조회가 수행된다.
+  - `q`: 키워드 검색, `in=name,body` 필드 지정 가능 (기본 전체)
+  - `objectType`와 `objectId`는 항상 함께 전달해야 한다.
+  - `parentDocumentId`: 하위 문서 목록
+  - `fields`: `documentId,objectType,objectId,parentDocumentId,sortOrder,name,title,latestVersionId,createdBy,updatedBy,createdAt,updatedAt`
 
 ## Vue (Vuetify 3) Client Guide
 
 ### Setup
-- API Base: `/api`
+- API Base: `/api/mgmt`
 - HTTP Client: axios 또는 fetch
 - 상태 관리: pinia 권장
 

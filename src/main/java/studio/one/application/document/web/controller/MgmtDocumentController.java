@@ -60,7 +60,7 @@ import studio.one.platform.web.dto.ApiResponse;
 @RestController 
 @RequestMapping("${" + PropertyKeys.Features.PREFIX + ".document.web.mgmt-base-path:/api/mgmt/documents}")
 @RequiredArgsConstructor
-public class DocumentController {
+public class MgmtDocumentController {
 
     private final DocumentService service;
 

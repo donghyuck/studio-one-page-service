@@ -41,7 +41,7 @@ import studio.one.application.document.persistence.jpa.repo.DocumentPropertyRepo
 import studio.one.application.document.persistence.jpa.repo.DocumentRepository;
 import studio.one.application.document.persistence.jpa.repo.DocumentVersionRepository;
 import studio.one.application.document.web.DocumentExceptionHandler;
-import studio.one.application.document.web.controller.DocumentController;
+import studio.one.application.document.web.controller.MgmtDocumentController;
 import studio.one.platform.autoconfigure.EntityScanRegistrarSupport;
 import studio.one.platform.autoconfigure.I18nKeys;
 import studio.one.platform.autoconfigure.PersistenceProperties;
@@ -130,7 +130,7 @@ public class DocumentAutoConfiguration {
     @Configuration
     @ConditionalOnProperty(prefix = PropertyKeys.Features.PREFIX
             + ".document.web", name = "enabled", havingValue = "true", matchIfMissing = false)
-    @Import({ DocumentController.class, DocumentExceptionHandler.class })
+    @Import({ MgmtDocumentController.class, DocumentExceptionHandler.class })
     static class DocumentWebConfig {
 
     }
