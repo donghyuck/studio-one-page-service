@@ -42,7 +42,7 @@ publishing {
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
-            artifactId = "studio-application-starter-document"
+            artifactId = "studio-application-starter-pages"
         }
     }
     repositories {

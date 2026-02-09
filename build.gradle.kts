@@ -49,7 +49,7 @@ publishing {
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
-            artifactId = "document-service" 
+            artifactId = "studio-one-pages" 
         }
     }
     repositories {
