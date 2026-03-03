@@ -1,0 +1,32 @@
+{
+  "groups": [
+    {
+      "name": "studio.features.document",
+      "type": "studio.one.application.document.autoconfigure.DocumentFeatureProperties",
+      "sourceType": "studio.one.application.document.autoconfigure.DocumentFeatureProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "studio.features.document.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "studio.one.application.document.autoconfigure.DocumentFeatureProperties"
+    },
+    {
+      "name": "studio.features.document.fail-if-missing",
+      "type": "java.lang.Boolean",
+      "sourceType": "studio.one.application.document.autoconfigure.DocumentFeatureProperties"
+    },
+    {
+      "name": "studio.features.document.persistence",
+      "type": "studio.one.platform.autoconfigure.PersistenceProperties$Type",
+      "sourceType": "studio.one.application.document.autoconfigure.DocumentFeatureProperties"
+    },
+    {
+      "name": "studio.features.document.web",
+      "type": "studio.one.platform.autoconfigure.WebEndpointProperties",
+      "sourceType": "studio.one.application.document.autoconfigure.DocumentFeatureProperties"
+    }
+  ],
+  "hints": []
+}
