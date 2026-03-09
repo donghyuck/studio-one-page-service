@@ -695,6 +695,7 @@ public class DocumentDaoJdbc implements DocumentDao {
             return;
         }
         Long documentId = meta.get("DOCUMENT_ID") == null ? null : ((Number) meta.get("DOCUMENT_ID")).longValue();
+        assertBlockBelongsToDocument(cmd.getDocumentId(), documentId);
         Integer currentSortOrder = meta.get("SORT_ORDER") == null ? null : ((Number) meta.get("SORT_ORDER")).intValue();
         Long currentParentBlockId = meta.get("PARENT_BLOCK_ID") == null ? null : ((Number) meta.get("PARENT_BLOCK_ID")).longValue();
         String currentBlockType = meta.get("BLOCK_TYPE") == null ? null : meta.get("BLOCK_TYPE").toString();
@@ -797,6 +798,7 @@ public class DocumentDaoJdbc implements DocumentDao {
             return;
         }
         Long documentId = meta.get("DOCUMENT_ID") == null ? null : ((Number) meta.get("DOCUMENT_ID")).longValue();
+        assertBlockBelongsToDocument(cmd.getDocumentId(), documentId);
         Integer currentSortOrder = meta.get("SORT_ORDER") == null ? null : ((Number) meta.get("SORT_ORDER")).intValue();
         Long currentParentBlockId = meta.get("PARENT_BLOCK_ID") == null ? null : ((Number) meta.get("PARENT_BLOCK_ID")).longValue();
         OffsetDateTime currentUpdatedAt = readUpdatedAt(meta.get("UPDATED_AT"));
@@ -898,6 +900,7 @@ public class DocumentDaoJdbc implements DocumentDao {
             return;
         }
         Long documentId = meta.get("DOCUMENT_ID") == null ? null : ((Number) meta.get("DOCUMENT_ID")).longValue();
+        assertBlockBelongsToDocument(cmd.getDocumentId(), documentId);
         Integer sortOrder = meta.get("SORT_ORDER") == null ? null : ((Number) meta.get("SORT_ORDER")).intValue();
         Long parentBlockId = meta.get("PARENT_BLOCK_ID") == null ? null : ((Number) meta.get("PARENT_BLOCK_ID")).longValue();
         String blockType = meta.get("BLOCK_TYPE") == null ? null : meta.get("BLOCK_TYPE").toString();
@@ -1058,6 +1061,12 @@ public class DocumentDaoJdbc implements DocumentDao {
         }
         if (actual == null || !expected.toInstant().equals(actual.toInstant())) {
             throw new DocumentConflictException(documentId);
+        }
+    }
+
+    private void assertBlockBelongsToDocument(long expectedDocumentId, Long actualDocumentId) {
+        if (actualDocumentId == null || expectedDocumentId != actualDocumentId.longValue()) {
+            throw DocumentNotFoundException.byId(expectedDocumentId);
         }
     }
 

@@ -30,6 +30,8 @@ dependencies {
     // studio one
     compileOnly("studio.one.starter:studio-platform-starter:${property("studioOneVersion")}") 
     compileOnly("studio.one.starter:studio-platform-starter-user:${property("studioOneVersion")}")
+    testImplementation("studio.one.starter:studio-platform-starter:${property("studioOneVersion")}")
+    testImplementation("studio.one.starter:studio-platform-starter-user:${property("studioOneVersion")}")
     // spring boot
     compileOnly("org.springframework.boot:spring-boot-starter-validation") 
     compileOnly("org.springframework.boot:spring-boot-starter-aop") 
@@ -38,6 +40,10 @@ dependencies {
     compileOnly("org.springframework.boot:spring-boot-starter-security") 
     compileOnly("org.springframework.boot:spring-boot-starter-cache")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-web")
+    testImplementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    testImplementation("org.springframework.boot:spring-boot-starter-security")
+    testImplementation("org.springframework.security:spring-security-test")
     // lombok
     val lombokVersion: String = project.findProperty("lombokVersion") as String? ?: "1.18.30"
     compileOnly("org.projectlombok:lombok:$lombokVersion")

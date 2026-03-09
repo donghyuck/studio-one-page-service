@@ -11,8 +11,10 @@ import java.util.Objects;
 import java.util.Optional;
 
 import javax.validation.Valid;
+import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
@@ -66,56 +68,75 @@ public class MgmtDocumentController {
 
     public static class CreateDocumentRequest {
         @NotNull
+        @PositiveOrZero
         public Integer objectType;
         @NotNull
+        @PositiveOrZero
         public Long objectId;
         public Long parentDocumentId;
+        @PositiveOrZero
         public Integer sortOrder;
         @NotBlank
+        @Size(max = 100)
         public String name;
         @NotBlank
+        @Size(max = 200)
         public String title;
         @NotNull
+        @PositiveOrZero
         public Integer bodyType;
         @NotNull
+        @Size(max = 20000)
         public String bodyText;
         public Map<String, String> properties;
     }
 
     public static class CreateVersionRequest {
         @NotBlank
+        @Size(max = 200)
         public String title;
         @NotNull
+        @PositiveOrZero
         public Integer bodyType;
         @NotNull
+        @Size(max = 20000)
         public String bodyText;
         public Map<String, String> properties;
     }
 
     public static class UpdateMetaRequest {
         @NotBlank
+        @Size(max = 100)
         public String name;
+        @Size(max = 255)
         public String pattern;
     }
 
     public static class CreateBlockRequest {
         public Long parentBlockId;
         @NotBlank
+        @Size(max = 64)
         public String blockType;
+        @Size(max = 20000)
         public String blockData;
+        @PositiveOrZero
         public Integer sortOrder;
     }
 
     public static class UpdateBlockRequest {
         public Long parentBlockId;
         @NotBlank
+        @Size(max = 64)
         public String blockType;
+        @Size(max = 20000)
         public String blockData;
+        @PositiveOrZero
         public Integer sortOrder;
     }
 
     public static class MoveBlockRequest {
         public Long parentBlockId;
+        @PositiveOrZero
         public Integer sortOrder;
     }
 
@@ -148,6 +169,7 @@ public class MgmtDocumentController {
     @PreAuthorize("@endpointAuthz.can('features:document','create')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> create(@Valid @RequestBody CreateDocumentRequest req,
             @AuthenticationPrincipal(expression = "userId") Long userId) {
+        validateProperties(req.properties);
         long id = service.create(new CreateDocumentCommand(
                 req.objectType, req.objectId, req.parentDocumentId, req.sortOrder, req.name, req.title,
                 req.bodyText, req.bodyType, req.properties, requireUserId(userId)));
@@ -159,6 +181,7 @@ public class MgmtDocumentController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> newVersion(@PathVariable long documentId,
             @Valid @RequestBody CreateVersionRequest req,
             @AuthenticationPrincipal(expression = "userId") Long userId) {
+        validateProperties(req.properties);
         int v = service.newVersion(documentId, new CreateVersionCommand(
                 req.title, req.bodyText, req.bodyType, req.properties, requireUserId(userId)));
         return ResponseEntity.ok(ApiResponse.ok(Map.of("documentId", documentId, "versionId", v)));
@@ -292,6 +315,25 @@ public class MgmtDocumentController {
         }
     }
 
+    private void validateProperties(Map<String, String> properties) {
+        if (properties == null || properties.isEmpty()) {
+            return;
+        }
+        if (properties.size() > 50) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Too many properties");
+        }
+        for (Map.Entry<String, String> entry : properties.entrySet()) {
+            String key = entry.getKey();
+            if (key == null || key.isBlank() || key.length() > 64) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid property key");
+            }
+            String value = entry.getValue();
+            if (value != null && value.length() > 1000) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid property value");
+            }
+        }
+    }
+
     @GetMapping("/{documentId}/versions/{versionId}")
     @PreAuthorize("@endpointAuthz.can('features:document','read')")
     public ResponseEntity<ApiResponse<DocumentVersionBundle>> version(@PathVariable long documentId, @PathVariable int versionId) {
@@ -327,7 +369,7 @@ public class MgmtDocumentController {
             @RequestHeader(value = "If-Match", required = false) String ifMatch,
             @AuthenticationPrincipal(expression = "userId") Long userId) {
         service.updateBlock(new UpdateBlockCommand(
-                blockId, req.parentBlockId, req.blockType, req.blockData, req.sortOrder,
+                documentId, blockId, req.parentBlockId, req.blockType, req.blockData, req.sortOrder,
                 requireUserId(userId), parseIfMatch(ifMatch)));
         return ResponseEntity.noContent().build();
     }
@@ -340,7 +382,7 @@ public class MgmtDocumentController {
             @RequestHeader(value = "If-Match", required = false) String ifMatch,
             @AuthenticationPrincipal(expression = "userId") Long userId) {
         service.moveBlock(new MoveBlockCommand(
-                blockId, req.parentBlockId, req.sortOrder, requireUserId(userId), parseIfMatch(ifMatch)));
+                documentId, blockId, req.parentBlockId, req.sortOrder, requireUserId(userId), parseIfMatch(ifMatch)));
         return ResponseEntity.noContent().build();
     }
 
@@ -350,7 +392,7 @@ public class MgmtDocumentController {
             @PathVariable long blockId,
             @RequestHeader(value = "If-Match", required = false) String ifMatch,
             @AuthenticationPrincipal(expression = "userId") Long userId) {
-        service.deleteBlock(new DeleteBlockCommand(blockId, requireUserId(userId), parseIfMatch(ifMatch)));
+        service.deleteBlock(new DeleteBlockCommand(documentId, blockId, requireUserId(userId), parseIfMatch(ifMatch)));
         return ResponseEntity.noContent().build();
     }
 

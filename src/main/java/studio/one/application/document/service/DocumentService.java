@@ -1,7 +1,6 @@
 package studio.one.application.document.service;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -50,7 +49,7 @@ public class DocumentService {
 
     public DocumentVersionBundle getVersion(long documentId, int versionId) {
         return dao.findVersionBundle(documentId, versionId)
-            .orElseThrow(() -> new NoSuchElementException("version not found: " + documentId + ":" + versionId));
+            .orElseThrow(() -> DocumentNotFoundException.byId(documentId));
     }
 
     @Transactional(readOnly = true)

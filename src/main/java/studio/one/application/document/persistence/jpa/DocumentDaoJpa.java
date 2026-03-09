@@ -381,6 +381,7 @@ public class DocumentDaoJpa implements DocumentDao {
     public void updateBlock(UpdateBlockCommand cmd) {
         DocumentBlockEntity block = blockRepo.findById(cmd.getBlockId())
             .orElseThrow(() -> new NoSuchElementException("block not found: " + cmd.getBlockId()));
+        assertBlockBelongsToDocument(cmd.getDocumentId(), block.getDocumentId());
         assertNotStale(cmd.getExpectedUpdatedAt(), block.getUpdatedAt(), cmd.getBlockId());
         DocumentEntity doc = docRepo.findByIdForUpdate(block.getDocumentId())
             .orElseThrow(() -> DocumentNotFoundException.byId(block.getDocumentId()));
@@ -427,6 +428,7 @@ public class DocumentDaoJpa implements DocumentDao {
     public void moveBlock(MoveBlockCommand cmd) {
         DocumentBlockEntity block = blockRepo.findById(cmd.getBlockId())
             .orElseThrow(() -> new NoSuchElementException("block not found: " + cmd.getBlockId()));
+        assertBlockBelongsToDocument(cmd.getDocumentId(), block.getDocumentId());
         assertNotStale(cmd.getExpectedUpdatedAt(), block.getUpdatedAt(), cmd.getBlockId());
         DocumentEntity doc = docRepo.findByIdForUpdate(block.getDocumentId())
             .orElseThrow(() -> DocumentNotFoundException.byId(block.getDocumentId()));
@@ -470,6 +472,7 @@ public class DocumentDaoJpa implements DocumentDao {
         long blockId = cmd.getBlockId();
         DocumentBlockEntity block = blockRepo.findById(blockId)
             .orElseThrow(() -> new NoSuchElementException("block not found: " + blockId));
+        assertBlockBelongsToDocument(cmd.getDocumentId(), block.getDocumentId());
         assertNotStale(cmd.getExpectedUpdatedAt(), block.getUpdatedAt(), blockId);
         DocumentEntity doc = docRepo.findByIdForUpdate(block.getDocumentId())
             .orElseThrow(() -> DocumentNotFoundException.byId(block.getDocumentId()));
@@ -596,6 +599,12 @@ public class DocumentDaoJpa implements DocumentDao {
             && Objects.equals(current.getBlockData(), next.getBlockData())
             && Objects.equals(current.getSortOrder(), next.getSortOrder())
             && Objects.equals(current.getIsDeleted(), next.getIsDeleted());
+    }
+
+    private void assertBlockBelongsToDocument(long expectedDocumentId, long actualDocumentId) {
+        if (expectedDocumentId != actualDocumentId) {
+            throw DocumentNotFoundException.byId(expectedDocumentId);
+        }
     }
 
     private int resolveBlockSortOrder(long documentId, int versionId, Integer desiredSortOrder) {

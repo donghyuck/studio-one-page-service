@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class MoveBlockCommand {
+    private final long documentId;
     private final long blockId;
     private final Long parentBlockId;
     private final Integer sortOrder;

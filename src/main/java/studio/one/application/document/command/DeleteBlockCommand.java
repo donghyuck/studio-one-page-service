@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public class DeleteBlockCommand {
+    private final long documentId;
     private final long blockId;
     private final long actorUserId;
     private final java.time.OffsetDateTime expectedUpdatedAt;

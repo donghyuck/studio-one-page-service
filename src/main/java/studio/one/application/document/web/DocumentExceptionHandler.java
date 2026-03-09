@@ -1,6 +1,7 @@
 package studio.one.application.document.web;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,8 +19,7 @@ public class DocumentExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT)
             .body(Map.of(
                 "error", "block_conflict",
-                "message", ex.getMessage(),
-                "blockId", ex.getBlockId()));
+                "message", "The block was modified by another request."));
     }
 
     @ExceptionHandler(DocumentConflictException.class)
@@ -27,7 +27,14 @@ public class DocumentExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT)
             .body(Map.of(
                 "error", "document_conflict",
-                "message", ex.getMessage(),
-                "documentId", ex.getDocumentId()));
+                "message", "The document was modified by another request."));
+    }
+
+    @ExceptionHandler({ IllegalArgumentException.class, NoSuchElementException.class })
+    public ResponseEntity<Map<String, Object>> handleInvalidRequest(RuntimeException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(Map.of(
+                "error", "invalid_request",
+                "message", "Invalid request."));
     }
 }
